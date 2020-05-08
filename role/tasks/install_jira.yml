@@ -1,0 +1,33 @@
+--- 
+
+- name: jira groups 
+  group: name={{ jira_user_group }} gid={{ jira_user_group_gid }}
+
+- name: defalut Jira usreand home
+  user: name={{ jira_user }} shell= /bin/bash group={{ jira_user_group }} uid={{jira_user_id }} home={{ jira_user_home_dir }}
+
+- name: Download the source 
+  get_url: url={{ https://confluence.atlassian.com/adminjiraserver/installing-jira-applications-on-linux-from-archive-file-938846844.html }}--{{ jira_version }} .tar.gz dest={{ jira_user_home_dir }}/atlassian-jira-{{ jira_version }}.tar.gz
+
+- stat: path={{ jira_user_home_dir }}/atlassian-jira-{{ jira_version }}-standalone
+  register: st
+
+- name: extract the sources
+  unarchive: src={{ jira_user_home_dir }}/atlassian-jira-{{ jira_version }}.tar.gz dest={{ jira_user_home_dir }} copy=no
+  when: not st.stat.exists
+ 
+- name: make the dir easier to reach
+  file: src={{ jira_user_home_dir }}/atlassian-jira-{{ jira_version }}-standalone dest={{ jira_user_home_dir }}/jira owner={{ jira_user }} group={{ jira_user_group }} state=link
+
+- name: create jira-home dir
+  file: path={{ jira_home }} state=directory owner={{ jira_user }} group={{ jira_user_group }}
+
+- name: set the home dir inside the configs
+  template: src=jira-appication.properties.j2 dest={{ jira_user_home_dir }}/jira/atlassian-jira/WEB-INF/classes/jira-application.properties owner={{ jira_user }} group={{ jira_user_group }} mode=o644
+
+- name: copy the service script
+  template: src=jira.service.j2 dest=/usr/lib/systemd/system/jira.service
+
+- name: copy the init.d script
+  template: src=jira.js dest=/etc/init.d/jira
+

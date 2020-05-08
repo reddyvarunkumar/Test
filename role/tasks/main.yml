@@ -1,0 +1,4 @@
+---
+# tasks file for role
+ - include: install_dependencies.yml
+ - include: install_jira.yml  
